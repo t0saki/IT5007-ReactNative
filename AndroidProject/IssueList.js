@@ -52,7 +52,7 @@ class IssueFilter extends React.Component {
       return (
         <>
         {/****** Q1: Start Coding here. ******/}
-
+        <Text>This is a placeholder for the Issue Filter</Text>
         {/****** Q1: Code ends here ******/}
         </>
       );
@@ -72,11 +72,20 @@ const width= [40,80,80,80,80,80,200];
 function IssueRow(props) {
     const issue = props.issue;
     {/****** Q2: Coding Starts here. Create a row of data in a variable******/}
+    const rowData = [
+        issue.id,
+        issue.status,
+        issue.owner,
+        issue.created.toDateString(),
+        issue.effort,
+        issue.due ? issue.due.toDateString() : '',
+        issue.title,
+    ];
     {/****** Q2: Coding Ends here.******/}
     return (
       <>
       {/****** Q2: Start Coding here. Add Logic to render a row  ******/}
-      
+      <Row data={rowData} widthArr={width} style={styles.row} textStyle={styles.text}/>
       {/****** Q2: Coding Ends here. ******/}  
       </>
     );
@@ -89,14 +98,20 @@ function IssueRow(props) {
     );
 
     {/****** Q2: Start Coding here. Add Logic to initalize table header  ******/}
-
+    const tableHeader = ['ID', 'Status', 'Owner', 'Created', 'Effort', 'Due Date', 'Title'];
     {/****** Q2: Coding Ends here. ******/}
     
     
     return (
     <View style={styles.container}>
     {/****** Q2: Start Coding here to render the table header/rows.**********/}
-    
+      <Table borderStyle={{borderWidth: 1, borderColor: '#C1C0B9'}}>
+        <Row data={tableHeader} widthArr={width} style={styles.header} textStyle={styles.text}/>
+        <TableWrapper style={styles.dataWrapper}>
+          {/* Render the pre-mapped IssueRow components */}
+          {issueRows}
+        </TableWrapper>
+      </Table>
     {/****** Q2: Coding Ends here. ******/}
     </View>
     );
@@ -108,21 +123,65 @@ function IssueRow(props) {
       super();
       this.handleSubmit = this.handleSubmit.bind(this);
       /****** Q3: Start Coding here. Create State to hold inputs******/
+      this.state = { owner: '', title: '' };
+      // Bind the onChange handlers if not using arrow functions
+      this.onChangeOwner = this.onChangeOwner.bind(this);
+      this.onChangeTitle = this.onChangeTitle.bind(this);
       /****** Q3: Code Ends here. ******/
     }
   
     /****** Q3: Start Coding here. Add functions to hold/set state input based on changes in TextInput******/
+    onChangeOwner(text) {
+        this.setState({ owner: text });
+    }
+
+    onChangeTitle(text) {
+        this.setState({ title: text });
+    }
     /****** Q3: Code Ends here. ******/
     
     handleSubmit() {
       /****** Q3: Start Coding here. Create an issue from state variables and call createIssue. Also, clear input field in front-end******/
+      const issue = {
+        owner: this.state.owner,
+        title: this.state.title,
+        // Default effort and due date can be added if needed/required by backend
+        // effort: 0, 
+        // due: new Date(new Date().getTime() + 1000*60*60*24*10), // Example: due in 10 days
+      };
+      // Check if createIssue prop is passed and is a function
+      if (this.props.createIssue && typeof this.props.createIssue === 'function') {
+          this.props.createIssue(issue);
+          // Clear the form
+          this.setState({ owner: '', title: '' });
+      } else {
+          console.error("createIssue prop is not passed or is not a function");
+          alert("Error: Could not submit issue.");
+      }
       /****** Q3: Code Ends here. ******/
     }
   
     render() {
       return (
-          <View>
+          <View style={{padding: 10}}>
           {/****** Q3: Start Coding here. Create TextInput field, populate state variables. Create a submit button, and on submit, trigger handleSubmit.*******/}
+           <Text style={{fontWeight: 'bold', marginBottom: 5}}>Add New Issue:</Text>
+           <TextInput
+                placeholder="Owner"
+                style={{borderWidth: 1, borderColor: 'gray', marginBottom: 5, padding: 5}}
+                onChangeText={this.onChangeOwner}
+                value={this.state.owner}
+            />
+           <TextInput
+                placeholder="Title"
+                style={{borderWidth: 1, borderColor: 'gray', marginBottom: 10, padding: 5}}
+                onChangeText={this.onChangeTitle}
+                value={this.state.title}
+            />
+           <Button
+                title="Add Issue"
+                onPress={this.handleSubmit}
+            />
           {/****** Q3: Code Ends here. ******/}
           </View>
       );
@@ -197,14 +256,17 @@ export default class IssueList extends React.Component {
     return (
     <>
     {/****** Q1: Start Coding here. ******/}
+    <IssueFilter />
     {/****** Q1: Code ends here ******/}
 
 
     {/****** Q2: Start Coding here. ******/}
+    <IssueTable issues={this.state.issues} />
     {/****** Q2: Code ends here ******/}
 
     
     {/****** Q3: Start Coding here. ******/}
+    <IssueAdd createIssue={this.createIssue} />
     {/****** Q3: Code Ends here. ******/}
 
     {/****** Q4: Start Coding here. ******/}
