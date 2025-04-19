@@ -1,0 +1,11 @@
+version: '3'
+
+services:
+  it5007:
+    image: it5007_tutorial:t4
+    container_name: it5007-2220
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./:/root/project
+    command: /bin/bash -c "source ~/.bashrc && bash /root/project/start_npm.sh"
