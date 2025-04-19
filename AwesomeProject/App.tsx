@@ -80,7 +80,7 @@ function App(): React.JSX.Element {
             tabBarStyle: styles.tabBar,
             tabBarActiveTintColor: '#537791',
             tabBarInactiveTintColor: 'gray',
-            headerShown: false, // Hide the default header if you want custom headers per screen or none
+            headerShown: false,
           }}
         >
           <Tab.Screen
