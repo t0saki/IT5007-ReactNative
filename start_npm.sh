@@ -9,6 +9,7 @@ cd /root/project
 # mongo
 systemctl start mongod
 sleep 1
+mongo issuetracker ReactNativeServer/scripts/init.mongo.js
 
 # server
 cd ReactNativeServer

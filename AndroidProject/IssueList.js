@@ -123,10 +123,11 @@ function IssueRow(props) {
       super();
       this.handleSubmit = this.handleSubmit.bind(this);
       /****** Q3: Start Coding here. Create State to hold inputs******/
-      this.state = { owner: '', title: '' };
-      // Bind the onChange handlers if not using arrow functions
+      this.state = { owner: '', title: '', effort: '', due: '' };
       this.onChangeOwner = this.onChangeOwner.bind(this);
       this.onChangeTitle = this.onChangeTitle.bind(this);
+      this.onChangeEffort = this.onChangeEffort.bind(this);
+      this.onChangeDue = this.onChangeDue.bind(this);
       /****** Q3: Code Ends here. ******/
     }
   
@@ -138,6 +139,14 @@ function IssueRow(props) {
     onChangeTitle(text) {
         this.setState({ title: text });
     }
+
+    onChangeEffort(text) {
+        this.setState({ effort: text });
+    }
+
+    onChangeDue(text) {
+        this.setState({ due: text });
+    }
     /****** Q3: Code Ends here. ******/
     
     handleSubmit() {
@@ -145,15 +154,22 @@ function IssueRow(props) {
       const issue = {
         owner: this.state.owner,
         title: this.state.title,
-        // Default effort and due date can be added if needed/required by backend
-        // effort: 0, 
-        // due: new Date(new Date().getTime() + 1000*60*60*24*10), // Example: due in 10 days
+        effort: this.state.effort ? parseInt(this.state.effort, 10) : undefined,
+        due: this.state.due ? new Date(this.state.due) : undefined,
       };
-      // Check if createIssue prop is passed and is a function
+
+      if (this.state.effort && isNaN(issue.effort)) {
+        alert("Effort must be a number.");
+        return;
+      }
+       if (this.state.due && isNaN(issue.due.getTime())) {
+         alert("Invalid Due Date format. Please use YYYY-MM-DD.");
+         return;
+       }
+
       if (this.props.createIssue && typeof this.props.createIssue === 'function') {
           this.props.createIssue(issue);
-          // Clear the form
-          this.setState({ owner: '', title: '' });
+          this.setState({ owner: '', title: '', effort: '', due: '' });
       } else {
           console.error("createIssue prop is not passed or is not a function");
           alert("Error: Could not submit issue.");
@@ -163,7 +179,7 @@ function IssueRow(props) {
   
     render() {
       return (
-          <View style={{padding: 10}}>
+          <View>
           {/****** Q3: Start Coding here. Create TextInput field, populate state variables. Create a submit button, and on submit, trigger handleSubmit.*******/}
            <Text style={{fontWeight: 'bold', marginBottom: 5}}>Add New Issue:</Text>
            <TextInput
@@ -174,9 +190,22 @@ function IssueRow(props) {
             />
            <TextInput
                 placeholder="Title"
-                style={{borderWidth: 1, borderColor: 'gray', marginBottom: 10, padding: 5}}
+                style={{borderWidth: 1, borderColor: 'gray', marginBottom: 5, padding: 5}}
                 onChangeText={this.onChangeTitle}
                 value={this.state.title}
+            />
+            <TextInput
+                placeholder="Effort"
+                style={{borderWidth: 1, borderColor: 'gray', marginBottom: 5, padding: 5}}
+                onChangeText={this.onChangeEffort}
+                value={this.state.effort}
+                keyboardType="numeric"
+            />
+             <TextInput
+                placeholder="Due Date (YYYY-MM-DD)"
+                style={{borderWidth: 1, borderColor: 'gray', marginBottom: 10, padding: 5}}
+                onChangeText={this.onChangeDue}
+                value={this.state.due}
             />
            <Button
                 title="Add Issue"
@@ -193,13 +222,42 @@ class BlackList extends React.Component {
     {   super();
         this.handleSubmit = this.handleSubmit.bind(this);
         /****** Q4: Start Coding here. Create State to hold inputs******/
+        this.state = { name: '' };
+        this.onChangeName = this.onChangeName.bind(this);
         /****** Q4: Code Ends here. ******/
     }
     /****** Q4: Start Coding here. Add functions to hold/set state input based on changes in TextInput******/
+    onChangeName(text) {
+        this.setState({ name: text });
+    }
     /****** Q4: Code Ends here. ******/
 
     async handleSubmit() {
     /****** Q4: Start Coding here. Create an issue from state variables and issue a query. Also, clear input field in front-end******/
+        const name = this.state.name;
+        if (!name) {
+            alert("Please enter a name to blacklist.");
+            return;
+        }
+        console.log(`Attempting to blacklist: ${name}`); // Debug log
+
+        const query = `mutation AddToBlacklist($name: String!) {
+          addToBlacklist(nameInput: $name)
+        }`;
+        
+        const variables = { name };
+        
+        // Use the graphQLFetch function defined earlier
+        const data = await graphQLFetch(query, variables);
+        
+        if (data && data.addToBlacklist) {
+          alert(`Successfully added ${name} to the blacklist.`);
+          // Clear the input field
+          this.setState({ name: '' });
+        } else {
+          // Error handling is done within graphQLFetch, but you might add more specific handling here if needed
+          console.log('Blacklist addition might have failed. Check server logs or previous alerts.');
+        }
     /****** Q4: Code Ends here. ******/
     }
 
@@ -207,6 +265,17 @@ class BlackList extends React.Component {
     return (
         <View>
         {/****** Q4: Start Coding here. Create TextInput field, populate state variables. Create a submit button, and on submit, trigger handleSubmit.*******/}
+         <Text style={{fontWeight: 'bold', marginBottom: 5}}>Add Owner to Blacklist:</Text>
+           <TextInput
+                placeholder="Owner Name"
+                style={{borderWidth: 1, borderColor: 'gray', marginBottom: 10, padding: 5}}
+                onChangeText={this.onChangeName}
+                value={this.state.name}
+            />
+           <Button
+                title="Add to Blacklist"
+                onPress={this.handleSubmit}
+            />
         {/****** Q4: Code Ends here. ******/}
         </View>
     );
@@ -270,6 +339,7 @@ export default class IssueList extends React.Component {
     {/****** Q3: Code Ends here. ******/}
 
     {/****** Q4: Start Coding here. ******/}
+    <BlackList />
     {/****** Q4: Code Ends here. ******/}
     </>
       
