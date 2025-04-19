@@ -5,126 +5,142 @@
  * @format
  */
 
-import React from 'react';
-import type {PropsWithChildren} from 'react';
-import {
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  useColorScheme,
-  View,
-} from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { SafeAreaView, StyleSheet, Alert } from 'react-native';
+import { NavigationContainer } from '@react-navigation/native';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import IssueList, { IssueAdd, BlackList, graphQLFetch } from './IssueList';
+import Icon from 'react-native-vector-icons/Ionicons';
 
-import {
-  Colors,
-  DebugInstructions,
-  Header,
-  LearnMoreLinks,
-  ReloadInstructions,
-} from 'react-native/Libraries/NewAppScreen';
-
-type SectionProps = PropsWithChildren<{
+interface Issue {
+  id: number;
   title: string;
-}>;
-
-function Section({children, title}: SectionProps): React.JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
-  return (
-    <View style={styles.sectionContainer}>
-      <Text
-        style={[
-          styles.sectionTitle,
-          {
-            color: isDarkMode ? Colors.white : Colors.black,
-          },
-        ]}>
-        {title}
-      </Text>
-      <Text
-        style={[
-          styles.sectionDescription,
-          {
-            color: isDarkMode ? Colors.light : Colors.dark,
-          },
-        ]}>
-        {children}
-      </Text>
-    </View>
-  );
+  status: string;
+  owner: string;
+  created: string;
+  effort: number;
+  due?: string;
 }
 
-function App(): React.JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
+interface IssueInputs {
+  title: string;
+  owner: string;
+  due?: string;
+  effort?: number;
+}
 
-  const backgroundStyle = {
-    backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
+
+const Tab = createBottomTabNavigator();
+
+function App(): React.JSX.Element {
+  const [issues, setIssues] = useState<Issue[]>([]);
+
+  const loadData = useCallback(async () => {
+    const query = `query {
+        issueList {
+        id title status owner
+        created effort due
+        }
+    }`;
+
+    const data = await graphQLFetch(query);
+    if (data && data.issueList) {
+      setIssues(data.issueList);
+    } else {
+      Alert.alert("Error", "Failed to load issues.");
+    }
+  }, []);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]); // Run loadData when the component mounts and if loadData changes (it won't due to useCallback)
+
+  const createIssue = async (issue: IssueInputs) => {
+    const query = `mutation issueAdd($issue: IssueInputs!) {
+        issueAdd(issue: $issue) {
+        id
+        }
+    }`;
+
+    const data = await graphQLFetch(query, { issue });
+    if (data && data.issueAdd) {
+      loadData(); // Reload data after adding an issue
+    } else {
+      Alert.alert("Error", "Failed to add issue.");
+    }
   };
 
-  /*
-   * To keep the template simple and small we're adding padding to prevent view
-   * from rendering under the System UI.
-   * For bigger apps the recommendation is to use `react-native-safe-area-context`:
-   * https://github.com/AppAndFlow/react-native-safe-area-context
-   *
-   * You can read more about it here:
-   * https://github.com/react-native-community/discussions-and-proposals/discussions/827
-   */
-  const safePadding = '5%';
-
   return (
-    <View style={backgroundStyle}>
-      <StatusBar
-        barStyle={isDarkMode ? 'light-content' : 'dark-content'}
-        backgroundColor={backgroundStyle.backgroundColor}
-      />
-      <ScrollView
-        style={backgroundStyle}>
-        <View style={{paddingRight: safePadding}}>
-          <Header/>
-        </View>
-        <View
-          style={{
-            backgroundColor: isDarkMode ? Colors.black : Colors.white,
-            paddingHorizontal: safePadding,
-            paddingBottom: safePadding,
-          }}>
-          <Section title="Step One">
-            Edit <Text style={styles.highlight}>App.tsx</Text> to change this
-            screen and then come back to see your edits.
-          </Section>
-          <Section title="See Your Changes">
-            <ReloadInstructions />
-          </Section>
-          <Section title="Debug">
-            <DebugInstructions />
-          </Section>
-          <Section title="Learn More">
-            Read the docs to discover what to do next:
-          </Section>
-          <LearnMoreLinks />
-        </View>
-      </ScrollView>
-    </View>
+    <NavigationContainer>
+      <SafeAreaView style={styles.safeArea}>
+        <Tab.Navigator
+          screenOptions={{
+            headerStyle: styles.header,
+            headerTitleStyle: styles.headerTitle,
+            tabBarStyle: styles.tabBar,
+            tabBarActiveTintColor: '#537791',
+            tabBarInactiveTintColor: 'gray',
+            headerShown: false, // Hide the default header if you want custom headers per screen or none
+          }}
+        >
+          <Tab.Screen
+            name="Issues"
+            options={{
+              tabBarLabel: 'Issues', // Explicitly set tab label
+              tabBarIcon: ({ color, size }) => (
+                <Icon name="list" color={color} size={size} />
+              )
+            }}
+          >
+            {/* Pass issues state and loadData function */}
+            {(props) => <IssueList {...props} issues={issues} loadData={loadData} />}
+          </Tab.Screen>
+
+          <Tab.Screen
+            name="Add Issue"
+            options={{
+              tabBarLabel: 'Add Issue',
+              tabBarIcon: ({ color, size }) => (
+                <Icon name="add-circle" color={color} size={size} />
+              )
+            }}
+          >
+            {/* Pass createIssue function */}
+            {(props) => <IssueAdd {...props} createIssue={createIssue} />}
+          </Tab.Screen>
+
+          <Tab.Screen
+            name="Blacklist"
+            component={BlackList}
+            options={{
+              tabBarLabel: 'Blacklist',
+              tabBarIcon: ({ color, size }) => (
+                <Icon name="ban" color={color} size={size} />
+              )
+            }}
+          />
+        </Tab.Navigator>
+      </SafeAreaView>
+    </NavigationContainer>
   );
 }
 
 const styles = StyleSheet.create({
-  sectionContainer: {
-    marginTop: 32,
-    paddingHorizontal: 24,
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#f0f0f0',
   },
-  sectionTitle: {
-    fontSize: 24,
-    fontWeight: '600',
+  header: {
+    backgroundColor: '#537791',
   },
-  sectionDescription: {
-    marginTop: 8,
-    fontSize: 18,
-    fontWeight: '400',
+  headerTitle: {
+    color: '#ffffff',
+    fontWeight: 'bold',
   },
-  highlight: {
-    fontWeight: '700',
+  tabBar: {
+    backgroundColor: '#ffffff',
+    borderTopWidth: 1,
+    borderTopColor: '#cccccc',
   },
 });
 
